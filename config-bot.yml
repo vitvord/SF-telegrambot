@@ -1,0 +1,8 @@
+token: ''
+currency:
+  'рубль': RUB
+  'доллар': USD
+  'йена': JPY
+  'евро': EUR
+  'юань': CNY
+loglevel: info
