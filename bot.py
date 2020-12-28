@@ -31,7 +31,7 @@ def get_all_rates(message: telebot.types.Message):
     try:
         data, base = exchange.get_all_rates()
     except Exception as e:
-        LOG.critical(f"Can't get exchange values. Error: {repr(e)}")
+        LOG.exception(f"Can't get currency values.")
         return
     bot.send_message(message.chat.id, '\n'.join(data) + f'\nBase: {base}')
 
@@ -41,8 +41,8 @@ def parse_cur(message: telebot.types.Message):
     try:
         text = exchange.get_course_from_text(message.text)
     except Exception as e:
-        LOG.exception(f"Can't get course from API")
-        text = repr(e)
+        LOG.exception(f"Can't convert currency")
+        text = str(e)
     bot.reply_to(message, text)
 
 

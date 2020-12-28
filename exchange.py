@@ -33,25 +33,32 @@ class Exchange:
                   x in self.currency_names.values()]
         return result, self.base
 
-    def check_request(self, f, to):
-        if f not in self.currency_names_abbr:
+    def convert_currency_to_abbreviation(self, f, to):
+        if f not in self.currency_names:
             LOG.error(f"Can't get currency with name: {f}")
             raise ExchangeExceptions(f"Can't get currency with name: {f}")
-        if to not in self.currency_names_abbr:
+        if to not in self.currency_names:
             LOG.error(f"Can't get currency with name: {to}")
             raise ExchangeExceptions(f"Can't get currency with name: {to}")
+        return self.currency_names[f], self.currency_names[to]
 
-    def get_course(self, from_cur, to_cur) -> float:
-        self.check_request(from_cur, to_cur)
-        req = requests.get(self.BASEURL + f'?base={from_cur}&' + f'symbols={to_cur}')
+    def get_price(self, base: str, quote: str, amount: float) -> float:
+        base, quote = self.convert_currency_to_abbreviation(base, quote)
+        req = requests.get(self.BASEURL + f'?base={base}&' + f'symbols={quote}')
         try:
-            cur = float(req.json()['rates'][to_cur])
+            cur = float(req.json()['rates'][quote])
         except ValueError:
             LOG.error(f"A strange value from http API")
             raise ExchangeExceptions("I don't understand currency value got from external API")
-        return cur
+        try:
+            cur = float(cur)
+        except:
+            LOG.exception("Can't parse currency value from API")
+            raise ExchangeExceptions(
+                "Can't parse currency value. Please check available currency list (use /values command)")
+        return cur * amount
 
-    def get_course_from_text(self, text):
+    def get_course_from_text(self, text: str):
         try:
             from_cur, to_cur, value = text.split(' ')
         except Exception as e:
@@ -61,9 +68,9 @@ class Exchange:
         try:
             value = float(value)
         except ValueError:
-            LOG.exception("Can't parse currency value")
+            LOG.exception("Can't parse currency amount")
             raise ExchangeExceptions(
                 "Can't parse currency value. Please check available currency list (use /values command)")
 
-        cur = self.get_course(self.currency_names[from_cur], self.currency_names[to_cur])
-        return f"Цена {value} {from_cur} в {to_cur} {value * cur}"
+        cur = self.get_price(from_cur, to_cur, value)
+        return f"Цена {value} {from_cur} в {to_cur} {cur}"
